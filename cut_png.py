@@ -13,11 +13,19 @@ import os
 from multiprocessing import Pool
 import multiprocessing as multi
 
-DAY = '20190207'
-TIME = '150450'
-START_ID = 1869
-END_ID = 6287
-USABLE_CPU = 8
+parser = argparse.ArgumentParser(description='Training method')
+parser.add_argument('date')
+parser.add_argument('time')
+parser.add_argument('usable_cpu', type=int)
+parser.add_argument('start_id', type=int)
+parser.add_argument('end_id', type=int)
+args = parser.parse_args()
+
+DAY = args.date
+TIME = args.time
+USABLE_CPU = args.usable_cpu
+START_ID = args.start_id
+END_ID = args.end_id
 
 
 def _cut_forcuspoint_range(png_name, h_range=[0, 720], w_range=[210, 930], im_size=64, save_dir='./', out_info='',
