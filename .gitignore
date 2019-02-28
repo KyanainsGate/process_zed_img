@@ -1,0 +1,12 @@
+# ignore virtual env information
+/venv/*
+
+# ignore pycharm temp
+/__pychache__/*
+
+
+# ignore dataset
+/20*/*
+
+
+####
