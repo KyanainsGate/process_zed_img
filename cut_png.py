@@ -13,12 +13,17 @@ import os
 from multiprocessing import Pool
 import multiprocessing as multi
 
+CUT_TYPES = ['Square', 'Original', ]
+
 parser = argparse.ArgumentParser(description='Training method')
 parser.add_argument('date')
 parser.add_argument('time')
 parser.add_argument('usable_cpu', type=int)
 parser.add_argument('start_id', type=int)
 parser.add_argument('end_id', type=int)
+parser.add_argument('--depth', action='store_true')
+parser.add_argument('--right', action='store_true')
+
 args = parser.parse_args()
 
 DAY = args.date
@@ -26,9 +31,20 @@ TIME = args.time
 USABLE_CPU = args.usable_cpu
 START_ID = args.start_id
 END_ID = args.end_id
+DEPTH_BOOL = args.depth
+RIGHT_BOOL = args.right
+H_RANGE = [0, 376]  # cvae_2019ver ... original size
+W_RANGE = [0, 672]  # cvae_2019ver ... original size
+COMPRESS = 8  # cvae_2019ver
 
 
-def _cut_forcuspoint_range(png_name, h_range=[0, 720], w_range=[210, 930], im_size=64, save_dir='./', out_info='',
+# im_size = 64 # ito deformable
+# H_RANGE = [0, 720] # ito deformable
+# W_RANGE = [210, 930] # ito deformable
+
+
+def _cut_forcuspoint_range(png_name, h_range=H_RANGE, w_range=W_RANGE, im_size=64,
+                           compress_ratio=COMPRESS, save_dir='./', out_info='',
                            show_img=False):
     """
     Specify the area of image to trim, and reduct the size of it.
@@ -44,15 +60,21 @@ def _cut_forcuspoint_range(png_name, h_range=[0, 720], w_range=[210, 930], im_si
     """
     h_min, h_max = h_range
     w_min, w_max = w_range
-    w_size = (w_max - w_min)
-    h_size = (h_max - h_min)
+    w, h = (w_max - w_min), (h_max - h_min)
     img = cv2.imread(png_name, cv2.IMREAD_COLOR)
     img_RGB = img[:, :, [0, 1, 2]]
     dst = img_RGB[h_min:h_max, w_min:w_max, :]
-    dst = cv2.resize(dst, (im_size, im_size))
+    if w == h:
+        # Square images will be generated
+        dst = cv2.resize(dst, (im_size, im_size))
+    else:
+        # NOT squared images will be generated
+        im_w = int(w / compress_ratio)
+        im_h = int(h / compress_ratio)
+        dst = cv2.resize(dst, (im_w, im_h))
+
     left_00n = png_name.split('.')[-2]
     left_00n = left_00n.split('/')[-1]
-
     out_name = save_dir + left_00n + out_info + '.png'
     t = cv2.imwrite(out_name, dst)
 
@@ -60,6 +82,10 @@ def _cut_forcuspoint_range(png_name, h_range=[0, 720], w_range=[210, 930], im_si
         cv2.imshow('image', dst)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+
+def _compress_(png_name, ):
+    return 0
 
 
 def _cut_multi_(png_filename):
@@ -76,18 +102,19 @@ def _cut_multi_(png_filename):
     _cut_forcuspoint_range(png_filename, save_dir=export_dir, out_info='cut')
 
 
-def _find_leftpng(dir_name, start_id, end_id):
+def _find_png(png_type, dir_name, start_id, end_id):
     """
     Get the png file names, and id to process.
     The process will be done based on id
     e.g.) start_id = 3, end_id = 10, image I[n] will be processed from I[3] to I[10], 8 images.
 
+    :param png_type: left or right or depth
     :param dir_name: directory name which contains left***.png
     :param start_id:
     :param end_id:
     :return:
     """
-    png_list = glob.glob(dir_name + "left*.png")
+    png_list = glob.glob(dir_name + png_type + "*.png")
     png_list.sort()
     return png_list[start_id - 1:end_id]
 
@@ -96,10 +123,13 @@ def export_cutimg(import_dirname, start_id, end_id):
     export_dirname = import_dir[:-1] + '-cut'  # Get export dirname process
     if not os.path.exists(export_dirname):
         os.mkdir(export_dirname)
-    left_img_list = _find_leftpng(import_dirname, start_id, end_id)
-    # for png_filename in left_img_list:
-    #     _cut_forcuspoint_range(png_filename, save_dir=export_dirname,
-    #                            out_info='cut')
+    left_img_list = _find_png('left', import_dirname, start_id, end_id)
+    if DEPTH_BOOL:
+        depth_img_list = _find_png('depth', import_dirname, start_id, end_id)
+        left_img_list.extend(depth_img_list)
+    if RIGHT_BOOL:
+        right_img_list = _find_png('right', import_dirname, start_id, end_id)
+        left_img_list.extend(right_img_list)
     p = Pool(USABLE_CPU)
     p.map(_cut_multi_, left_img_list)
     p.close()
