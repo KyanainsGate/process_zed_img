@@ -34,8 +34,10 @@ END_ID = args.end_id
 DEPTH_BOOL = args.depth
 RIGHT_BOOL = args.right
 H_RANGE = [0, 376]  # cvae_2019ver ... original size
-W_RANGE = [0, 672]  # cvae_2019ver ... original size
+W_RANGE = [148, 524]  # cvae_2019ver ... squared size
+# W_RANGE = [0, 672]  # cvae_2019ver ... original size
 COMPRESS = 8  # cvae_2019ver
+SQUARED_IMG_SIZE = 64
 
 
 # im_size = 64 # ito deformable
@@ -43,7 +45,7 @@ COMPRESS = 8  # cvae_2019ver
 # W_RANGE = [210, 930] # ito deformable
 
 
-def _cut_forcuspoint_range(png_name, h_range=H_RANGE, w_range=W_RANGE, im_size=64,
+def _cut_forcuspoint_range(png_name, h_range=H_RANGE, w_range=W_RANGE, im_size=SQUARED_IMG_SIZE,
                            compress_ratio=COMPRESS, save_dir='./', out_info='',
                            show_img=False):
     """
